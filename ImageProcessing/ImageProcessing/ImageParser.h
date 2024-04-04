@@ -13,8 +13,6 @@ public:
 
 	ImageParser(char* file);
 
-	void getRBGOfImage();
-
 	unsigned char* readBMP();
 };
 #endif

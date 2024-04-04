@@ -3,6 +3,7 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include <algorithm>
 
 #include "ImageParser.h"
 
@@ -14,22 +15,43 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
+__global__ void multiplyKernel(int* c, const int* a, const int* b)
+{
+    int i = threadIdx.x;
+    c[i] = a[i] * b[i];
+}
+
 int main()
 {
-    const int arraySize = 5;
-    const int a[arraySize] = { 1, 2, 3, 4, 5 };
-    const int b[arraySize] = { 10, 20, 30, 40, 50 };
+    ImageParser parser = ImageParser("1660578195.bmp");
+    
+    const int arraySize = 20;
+    std::cout << arraySize << std::endl;
+    const int a[arraySize] = { 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
+    unsigned char* imagearr = parser.readBMP();
+    int imageInt[arraySize] = { 0 };
+    for (int i = 0; i < arraySize; i++) {
+        imageInt[i] = (int)imagearr[i];
+    }
     int c[arraySize] = { 0 };
 
+    int d =0;
+    for (auto i : imageInt)
+    {
+        std::cout << i << " ";
+        d++;
+    }
+    std::cout << "\nThe length of the given Array is: " << d << std::endl;
+
     // Add vectors in parallel.
-    cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
+    cudaError_t cudaStatus = addWithCuda(c, a, imageInt, arraySize);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "addWithCuda failed!");
         return 1;
     }
 
-    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-        c[0], c[1], c[2], c[3], c[4]);
+    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d,%d}\n",
+        c[0], c[1], c[2], c[3], c[4],c[5]);
 
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
@@ -39,8 +61,7 @@ int main()
         return 1;
     }
 
-    ImageParser parser = ImageParser("1660578195.bmp");
-    parser.readBMP();
+    
 
     return 0;
 }
@@ -93,7 +114,7 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
     }
 
     // Launch a kernel on the GPU with one thread for each element.
-    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
+    multiplyKernel <<<1, size>>>(dev_c, dev_a, dev_b);
 
     // Check for any errors launching the kernel
     cudaStatus = cudaGetLastError();

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include<array> 
 using namespace std;
 ImageParser::ImageParser(char* file)
 	: m_file{ file }
@@ -49,5 +50,7 @@ unsigned char* ImageParser::readBMP()
     }
 
     fclose(f);
+
+    cout << "Length: " << row_padded << endl;
     return data;
 }
