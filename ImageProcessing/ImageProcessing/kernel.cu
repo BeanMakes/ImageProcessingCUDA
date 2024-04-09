@@ -15,8 +15,21 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
-__global__ void multiplyKernel(int* c, const int* a, const int* b)
+__global__ void multiplyKernel(int* c, const int* a, const int* b, int size_of_array)
 {
+
+    //set thread ID
+    unsigned int cuda_education_thread_id = threadIdx.x;
+
+    unsigned int linear_id_of_thread = blockIdx.x * blockDim.x + threadIdx.x;
+
+    //convert global data pointer to the local pointer of this block
+    int* local_data_of_block = c + blockIdx.x * blockDim.x;
+
+    if (linear_id_of_thread >= size_of_array) return;  //make sure the number of threads that are processing the array is not greater than the size of the array 
+
+
+
     int i = threadIdx.x;
     c[i] = a[i] * b[i];
 }
@@ -25,9 +38,10 @@ int main()
 {
     ImageParser parser = ImageParser("1660578195.bmp");
     
-    const int arraySize = 20;
+    const int arraySize = 1024;
     std::cout << arraySize << std::endl;
-    const int a[arraySize] = { 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
+    int a[arraySize] = { 2 };
+    std::fill_n(a, arraySize, 2);
     unsigned char* imagearr = parser.readBMP();
     int imageInt[arraySize] = { 0 };
     for (int i = 0; i < arraySize; i++) {
@@ -35,31 +49,55 @@ int main()
     }
     int c[arraySize] = { 0 };
 
-    int d =0;
-    for (auto i : imageInt)
-    {
-        std::cout << i << " ";
-        d++;
-    }
-    std::cout << "\nThe length of the given Array is: " << d << std::endl;
+    int num_array_each_block = 256;
+
+    int val = parser.readBMPToArray()[575][1023][0];
+
+    printf("image val in red channel at 575 1023: %d\n", val);
+
+    // Creates a BLOCK variable
+    dim3 BLOCK(num_array_each_block, 1);
+
+    // calculation of number of blocks needed based in threads.
+    dim3 cuda_education_grid((arraySize + BLOCK.x - 1) / BLOCK.x, 1);
+
+    printf("cuda_education_grid %d | BLOCK %d\n", cuda_education_grid.x, BLOCK.x);
+
+    //MEMORY MANAGEMENT ON HOST
+
+    size_t int_bytes = arraySize * sizeof(int);
+
+    int *host_data_send_to_device = (int*)malloc(int_bytes);
+
+    int* host_data_received_from_device = (int*)malloc(cuda_education_grid.x * sizeof(int));
+
+    //MEMORY MANAGMENT ON HOST END
+
+    int* dev_a = 0;
+    int* dev_b = 0;
+    int* dev_c = 0;
+
+    //cudaSetDevice(0);
 
     // Add vectors in parallel.
-    cudaError_t cudaStatus = addWithCuda(c, a, imageInt, arraySize);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addWithCuda failed!");
-        return 1;
-    }
+    //cudaError_t cudaStatus = addWithCuda(c, a, imageInt, arraySize);
+    //if (cudaStatus != cudaSuccess) {
+    //    fprintf(stderr, "addWithCuda failed!");
+    //    return 1;
+    //}
 
-    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d,%d}\n",
-        c[0], c[1], c[2], c[3], c[4],c[5]);
+    //cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
+
+    //printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d,%d}\n",
+    //    c[0], c[1], c[2], c[3], c[4],c[5]);
 
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-        return 1;
-    }
+    //cudaStatus = cudaDeviceReset();
+    //if (cudaStatus != cudaSuccess) {
+    //    fprintf(stderr, "cudaDeviceReset failed!");
+    //    return 1;
+    //}
 
     
 
@@ -72,6 +110,9 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
     int *dev_a = 0;
     int *dev_b = 0;
     int *dev_c = 0;
+
+    
+
     cudaError_t cudaStatus;
 
     // Choose which GPU to run on, change this on a multi-GPU system.
@@ -114,7 +155,7 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
     }
 
     // Launch a kernel on the GPU with one thread for each element.
-    multiplyKernel <<<1, size>>>(dev_c, dev_a, dev_b);
+    addKernel <<<1, size>>>(dev_c, dev_a, dev_b);
 
     // Check for any errors launching the kernel
     cudaStatus = cudaGetLastError();
