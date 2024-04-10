@@ -106,3 +106,17 @@ std::vector< std::vector< std::vector<int>>> ImageParser::readBMPToArray()
 
 
 }
+
+std::vector < std::vector <int>> ImageParser::turnGreyScale(std::vector< std::vector< std::vector<int>>> arr)
+{
+    std::vector < std::vector <int>> result(arr.size(),std::vector<int>(arr[0].size(),0));
+
+    for (int i = 0; i < result.size(); i++)
+    {
+        for (int j = 0; j < result[0].size(); j++)
+        {
+            result[i][j] = (arr[i][j][0] + arr[i][j][1] + arr[i][j][2]) / 3;
+        }
+    }
+    return result;
+}

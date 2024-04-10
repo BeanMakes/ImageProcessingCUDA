@@ -55,6 +55,10 @@ int main()
 
     printf("image val in red channel at 575 1023: %d\n", val);
 
+    int val2 = parser.turnGreyScale(parser.readBMPToArray())[575][1023];
+
+    printf("image val in greyscale channel at 575 1023: %d\n", val2);
+
     // Creates a BLOCK variable
     dim3 BLOCK(num_array_each_block, 1);
 

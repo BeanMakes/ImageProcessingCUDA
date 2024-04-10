@@ -16,7 +16,7 @@ public:
 
 	unsigned char* readBMP();
 
-	unsigned int* turnGreyScale();
+	std::vector < std::vector <int>> turnGreyScale(std::vector< std::vector< std::vector<int>>> arr);
 
 	std::vector< std::vector< std::vector<int>>> readBMPToArray();
 };
